@@ -1,0 +1,56 @@
+function [ ] = decode_packet( packet )
+%UNTITLED3 Summary of this function goes here
+% Detailed explanation goes here
+ind = 374; 
+packet_len = length(packet);
+for p = 1:packet_len-128
+decoded = man_decode(packet(p:p+127));
+if decoded ~= -1
+patt = CRC_pattern(decoded, 9);
+if sum(patt(1,:)) ~= 0
+'non'
+decoded
+patt
+end
+end
+decoded = man_decode(invert(packet(p:p+127)));
+if decoded ~= -1
+patt = CRC_pattern(decoded, 9);
+if sum(patt(1,:)) ~= 0
+'inv'
+decoded
+patt
+end
+end
+end
+%[m,ind] = find_ID('77839606', packet)
+%[m,ind] = find_ID('887C69F9', packet)
+%[m,ind] = find_ID('8178E561', packet)
+%[m,ind] = find_ID('1C07902E', packet)
+%[m,ind] = find_ID('DBDACB03', packet)
+%[m,ind] = find_ID('242534FC', packet)
+%
+preamble_bits = packet(1:ind-1);
+length(preamble_bits);
+packet = packet(ind:end);
+decoded_packet = zeros(1, length(packet)/2);
+for x = 1:2:length(packet)
+if packet(x) == 1
+decoded_packet((x+1)/2) = 0;
+else
+decoded_packet((x+1)/2) = 1;
+end
+end
+%packet_num = sum(decoded_packet .* 2 .^ (length(decoded_packet)-1:-1:0))
+pressure_bits = decoded_packet(1:8);
+temp_bits = decoded_packet(9:16);
+ID_bits = decoded_packet(17:48);
+flags = decoded_packet(49:56);
+crc = decoded_packet(57:end);
+count = 7:-1:0;
+preamble = num2str(preamble_bits)
+temp = sum(temp_bits .* 2.^count)
+pressure = sum(pressure_bits .* 2.^count)
+ID = dec2hex(sum(ID_bits .* 2 .^ (31:-1:0)))
+%}
+end

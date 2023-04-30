@@ -1,0 +1,62 @@
+function [packet, data] = TPMS_live_receiver_1()
+packet = 0;
+close all
+clc
+clear
+% radio = comm.SDRRTLReceiver('0','CenterFrequency',433e6,...
+% 'EnableTunerAGC',false,'TunerGain',16,'SampleRate',2.8e6,...
+% 'OutputDataType','single','SamplesPerFrame',5000,...
+% 'FrequencyCorrection',0);
+% RX = radio()
+data(5000,1) = 0; % = zeros(10000, 2001);
+for m = 1:5   
+TPMS_signal = step(radio);
+ 
+
+% figure; plot(abs(TPMS_signal)); title('TPMS_Signal')
+%step(hss, TPMS_signal);
+data(:,m) = TPMS_signal;
+end
+
+% %% Reformatting Signal
+% columns = 5000;
+% TPMS_signal = TPMS_concat(TPMS_signal);
+% TPMS_signal = reformat(TPMS_signal, columns);
+% [r,c] = size(TPMS_signal)
+power_threshold = 50*bandpower(data(:,1));
+packet(1,500) = 0;
+packets = 0;
+i = 2;
+while 1 %i<r-1 %changed to inf while
+%add a buffer of 4 to 5 columns
+TPMS_signal = step(radio);
+%step(hss, TPMS_signal);
+%data(:, 1:4) = data(:, 2:5);
+data(:,i+3) = TPMS_signal;
+if (bandpower(data(:,i)) > power_threshold)
+   low_ind = i-1;
+    upper_ind = i+3;
+      while i < upper_ind
+          i = i + 1;
+      end
+      figure
+      [a,b] = TPMS_concat(data(:, low_ind:upper_ind)');
+      plot(b,a)
+      packets = packets + 1;
+
+      d = size(data(:, low_ind:upper_ind)');
+      e = data(:, low_ind:upper_ind)';
+      test = TPMS_receiver2(data(:, low_ind:upper_ind)', power_threshold);
+      packet(packets,1:length(test)) = test;
+      [preamble, ID, temp, pressure, flags, crc, packet]=...
+          TPMS_decode_by_ID_first('938FDE42',packet(packets,1:length(test)))
+            % 938FDE42 &938FDE32
+        break;
+    else
+        i = i + 1;
+        if (i == 5000)
+            i=2;
+        end
+    end
+   end
+   end
